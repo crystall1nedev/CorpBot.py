@@ -770,8 +770,8 @@ class Settings(commands.Cog):
 	
 	# Return the requested stat
 	def getUserStat(self, user, server, stat, default = None):
-		# Make sure our user and server exists in the list
-		if not user or not server:
+		if any((x is None for x in (user,server,stat))):
+			# Missing info - just return the default
 			return default
 		self.checkUser(user, server)
 		return self.serverDict["Servers"].get(str(server.id),{}).get("Members",{}).get(str(user.id),{}).get(stat,default)
@@ -784,6 +784,9 @@ class Settings(commands.Cog):
 	
 	# Set the provided stat
 	def setUserStat(self, user, server, stat, value):
+		if any((x is None for x in (user,server,stat))):
+			# Missing info - just return None
+			return None
 		# Make sure our user and server exists in the list
 		self.checkUser(user, server)
 		self.serverDict["Servers"][str(server.id)]["Members"][str(user.id)][stat] = value
@@ -807,12 +810,13 @@ class Settings(commands.Cog):
 	# Increment a specified user stat by a provided amount
 	# returns the stat post-increment, or None if error
 	def incrementStat(self, user, server, stat, incrementAmount):
-		# Make sure our user and server exist
-		self.checkUser(user, server)
+		if any((x is None for x in (user,server,stat))) or not isinstance(incrementAmount,(int,float)):
+			# Missing info - just return None
+			return None
 		# Get initial value - set to 0 if doesn't exist
-		value = self.serverDict["Servers"].get(str(server.id),{}).get("Members",{}).get(str(user.id),{}).get(stat,0)
-		self.serverDict["Servers"][str(server.id)]["Members"][str(user.id)][stat] = value+incrementAmount
-		return value+incrementAmount
+		out = self.getUserStat(user, server, stat)
+		out = 0 if not isinstance(out,(int,float)) else out
+		return self.setUserStat(user, server, stat, out + incrementAmount)
 	
 	
 	# Get the requested stat
